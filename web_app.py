@@ -237,7 +237,7 @@ def run_pipeline(filename):
         try:
             cmd = [
                 "docker", "run", "-d", "--name", "ml_inference_service",
-                "--network", "consegnaprogettosdcc_ml_pipeline_network",
+                "--network", "consegnaprogettosdcc-copia_ml_pipeline_network",
                 "-v", f"{host_data_path}:/data",
                 "-p", "5000:5000",
                 "ml-pipeline-inference"
