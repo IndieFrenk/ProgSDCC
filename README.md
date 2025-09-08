@@ -12,7 +12,7 @@ Questo progetto implementa una pipeline di Machine Learning completamente automa
 - **Scalabilità**: Architettura modulare facilmente estendibile
 - **Real-time Monitoring**: Aggiornamenti in tempo reale dello stato della pipeline
 
-## 🏗 Architettura del Sistema
+## Architettura del Sistema
 
 ### Componenti Principali
 
