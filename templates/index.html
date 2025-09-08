@@ -413,7 +413,7 @@
             </div>
             <div style="margin-top: 20px; text-align: center;">
                 <button class="btn" onclick="document.getElementById('fileInput').click()">Seleziona File</button>
-                <button class="btn btn-danger" onclick="clearPipeline()">🗑️ Reset Sistema</button>
+                <button class="btn btn-danger" onclick="clearPipeline()">Reset Sistema</button>
             </div>
         </div>
 
@@ -801,7 +801,7 @@
                         const predictBtn = document.getElementById('predictBtn');
                         predictBtn.disabled = true;
                         predictBtn.style.background = '#495057';
-                        predictBtn.textContent = '📈 Esegui Predizione';
+                        predictBtn.textContent = 'Esegui Predizione';
                     }
                 })
                 .catch(error => {
