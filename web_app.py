@@ -235,9 +235,24 @@ def run_pipeline(filename):
 
         # Start new inference service
         try:
+            # Cerca reti che contengono ml_pipeline_network nel nome
+            network_cmd = [
+                "docker", "network", "ls", "--format", "{{.Name}}", "--filter", "name=ml_pipeline_network"
+                ]
+            network_result = subprocess.run(network_cmd, capture_output=True, text=True)
+            networks = network_result.stdout.strip().split('\n')
+    
+            # Prendi la prima rete trovata o usa il valore di default
+            if networks and networks[0]:
+                network_name = networks[0]
+                add_log(f"Trovata rete Docker: {network_name}")
+            else:
+                network_name = "ml_pipeline_network"  # Nome di default dalla docker-compose
+                add_log(f"Nessuna rete trovata, utilizzo default: {network_name}", 'warning')
+            
             cmd = [
                 "docker", "run", "-d", "--name", "ml_inference_service",
-                "--network", "consegnaprogettosdcc-copia_ml_pipeline_network",
+                "--network", network_name,
                 "-v", f"{host_data_path}:/data",
                 "-p", "5000:5000",
                 "ml-pipeline-inference"
