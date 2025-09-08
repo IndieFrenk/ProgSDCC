@@ -1,10 +1,10 @@
 ﻿# ML Pipeline Serverless - Sistema Distribuito per Analisi Retail
 
-## 📋 Descrizione del Progetto
+##  Descrizione del Progetto
 
 Questo progetto implementa una pipeline di Machine Learning completamente automatizzata e serverless per l'analisi del dataset OnlineRetail. Il sistema è progettato come un'applicazione distribuita che utilizza Docker containers per orchestrare le diverse fasi del processo di ML, dalla preparazione dei dati all'inferenza.
 
-### 🎯 Obiettivi
+###  Obiettivi
 
 - **Automazione Completa**: Pipeline automatica che si attiva al caricamento di nuovi dataset
 - **Architettura Serverless**: Utilizzo di container Docker per ogni fase del processo
@@ -12,7 +12,7 @@ Questo progetto implementa una pipeline di Machine Learning completamente automa
 - **Scalabilità**: Architettura modulare facilmente estendibile
 - **Real-time Monitoring**: Aggiornamenti in tempo reale dello stato della pipeline
 
-## 🏗️ Architettura del Sistema
+## 🏗 Architettura del Sistema
 
 ### Componenti Principali
 
@@ -39,7 +39,7 @@ Questo progetto implementa una pipeline di Machine Learning completamente automa
 Dataset Upload → Conversion → Data Cleaning → Model Training → Inference Ready
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisiti
 
@@ -68,7 +68,7 @@ Apri il browser e vai su: `http://localhost:8080`
 2. La pipeline si avvierà automaticamente
 3. Monitora il progresso nella dashboard
 
-## 📁 Struttura del Progetto
+##  Struttura del Progetto
 
 ```
 ├── docker-compose.yml              # Orchestrazione dei servizi
@@ -92,7 +92,7 @@ Apri il browser e vai su: `http://localhost:8080`
         └── inference/              # Servizio predizioni
 ```
 
-## 🔧 Configurazione e Personalizzazione
+##  Configurazione e Personalizzazione
 
 ### Variabili di Ambiente
 
@@ -110,7 +110,7 @@ I parametri del modello possono essere modificati in:
 - `ml-pipeline-serverless/functions/training/train.py`
 - `ml-pipeline-serverless/functions/cleaning/cleaning.py`
 
-## 📊 Funzionalità Principali
+##  Funzionalità Principali
 
 ### Dashboard Web Features
 
