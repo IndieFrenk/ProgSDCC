@@ -1,0 +1,58 @@
+services:
+  # Web Interface
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: ml_pipeline_web
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./templates:/app/templates
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HOST_DATA_PATH=${PWD}/data
+    networks:
+      - ml_pipeline_network
+    depends_on:
+      - builder
+    restart: unless-stopped
+
+  # Builder service to create all images
+  builder:
+    image: docker:24-cli
+    container_name: ml_pipeline_builder
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/workspace
+    working_dir: /workspace
+    command: |
+      sh -c "
+        echo 'Building ML Pipeline images...' &&
+        docker build -t ml-pipeline-converter ./ml-pipeline-serverless/functions/converter &&
+        docker build -t ml-pipeline-cleaning ./ml-pipeline-serverless/functions/cleaning &&
+        docker build -t ml-pipeline-training ./ml-pipeline-serverless/functions/training &&
+        docker build -t ml-pipeline-inference ./ml-pipeline-serverless/functions/inference &&
+        echo 'All images built successfully!'
+      "
+    networks:
+      - ml_pipeline_network
+  inference:
+    image: ml-pipeline-inference
+    container_name: ml_inference_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    networks:
+      - ml_pipeline_network
+    restart: unless-stopped
+networks:
+  ml_pipeline_network:
+    driver: bridge
+
+volumes:
+  ml_data:
+    driver: local

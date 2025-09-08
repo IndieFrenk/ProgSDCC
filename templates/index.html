@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema di Machine Learning Pipeline Automatizzato</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: #6c757d;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .header .institution {
+            color: #495057;
+            font-size: 14px;
+            font-style: italic;
+            border-top: 1px solid #e9ecef;
+            padding-top: 15px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #6c757d;
+            border-radius: 6px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            background: #e9ecef;
+            border-color: #495057;
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        
+
+        .btn {
+            background: #495057;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background: #343a40;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #6c757d;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .pipeline-status {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .phase {
+            flex: 1;
+            text-align: center;
+            padding: 15px 10px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .phase.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .phase.completed {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .phase.error {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        
+
+        .phase-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+
+        .phase-status {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .logs-container {
+            background: #212529;
+            color: #28a745;
+            padding: 15px;
+            border-radius: 6px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            border: 1px solid #495057;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            padding: 2px 0;
+        }
+
+        .log-entry.error {
+            color: #dc3545;
+        }
+
+        .log-entry.warning {
+            color: #ffc107;
+        }
+
+        .log-entry.info {
+            color: #17a2b8;
+        }
+
+        .dataset-preview {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .data-table th, .data-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .inference-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        .result-box {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .result-box.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background: #28a745;
+        }
+
+        .status-disconnected {
+            background: #dc3545;
+        }
+
+        .system-info {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 6px 6px 0;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .inference-form {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pipeline-status {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Sistema di Machine Learning Pipeline Automatizzato</h1>
+        <p class="subtitle">Progetto di Intelligenza Artificiale - Elaborazione e Analisi Predittiva dei Dati</p>
+        <div class="system-info">
+            <strong>Stato Sistema:</strong> <span class="status-indicator status-disconnected" id="connectionStatus"></span>
+            <span id="connectionText">Connessione in corso...</span>
+        </div>
+        <p class="institution">Università • Dipartimento di Informatica • Anno Accademico 2024/2025</p>
+    </div>
+
+    <div class="main-grid">
+        <!-- Upload Section -->
+        <div class="card">
+            <h2>Caricamento Dataset</h2>
+            <div class="upload-area" id="uploadArea">
+                <p><strong>Seleziona o trascina il file dataset</strong></p>
+                <p style="margin-top: 8px; font-size: 13px; color: #6c757d;">Formati supportati: .xlsx, .csv</p>
+                <input type="file" id="fileInput" accept=".xlsx,.csv">
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn" onclick="document.getElementById('fileInput').click()">Seleziona File</button>
+                <button class="btn btn-danger" onclick="clearPipeline()">🗑️ Reset Sistema</button>
+            </div>
+        </div>
+
+        <!-- Pipeline Status -->
+        <div class="card">
+            <h2>Stato Pipeline di Elaborazione</h2>
+            <div class="pipeline-status" id="pipelineStatus">
+                <div class="phase" data-phase="upload">
+                    <div class="phase-name">Upload</div>
+                    <div class="phase-status">In attesa</div>
+                </div>
+                <div class="phase" data-phase="conversion">
+                    <div class="phase-name">Conversione</div>
+                    <div class="phase-status">In attesa</div>
+                </div>
+                <div class="phase" data-phase="cleaning">
+                    <div class="phase-name">Pulizia</div>
+                    <div class="phase-status">In attesa</div>
+                </div>
+                <div class="phase" data-phase="training">
+                    <div class="phase-name">Training</div>
+                    <div class="phase-status">In attesa</div>
+                </div>
+                <div class="phase" data-phase="inference">
+                    <div class="phase-name">Inferenza</div>
+                    <div class="phase-status">In attesa</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dataset Preview -->
+    <div class="card">
+        <h2>Analisi Esplorativa del Dataset</h2>
+        <div class="stats-grid" id="datasetStats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="statRows">0</div>
+                <div class="stat-label">Osservazioni</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCols">0</div>
+                <div class="stat-label">Features</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statNulls">0</div>
+                <div class="stat-label">Valori Mancanti</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statSource">-</div>
+                <div class="stat-label">Stato</div>
+            </div>
+        </div>
+        <div class="dataset-preview">
+            <table class="data-table" id="dataTable" style="display: none;">
+                <thead id="dataTableHead"></thead>
+                <tbody id="dataTableBody"></tbody>
+            </table>
+            <div id="noDataMessage" style="text-align: center; padding: 40px; color: #6c757d;">
+                <p><strong>Nessun dataset caricato</strong></p>
+                <p style="font-size: 14px; margin-top: 5px;">Carica un file per iniziare l'analisi</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inference Testing -->
+    <div class="card">
+        <h2>Modulo di Testing e Validazione</h2>
+        <div id="inferenceSection">
+            <p style="margin-bottom: 20px; color: #6c757d; font-size: 14px;">
+                Inserisci i parametri per testare le prestazioni del modello addestrato
+            </p>
+            <form class="inference-form" id="inferenceForm">
+                <div class="form-group">
+                    <label for="quantity">Quantità</label>
+                    <input type="number" id="quantity" name="Quantity" value="5" step="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="unitPrice">Prezzo Unitario (€)</label>
+                    <input type="number" id="unitPrice" name="UnitPrice" value="3.5" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label for="customerId">ID Cliente</label>
+                    <input type="number" id="customerId" name="CustomerID" value="12680" required>
+                </div>
+                <div class="form-group">
+                    <label for="stockCode">Codice Prodotto</label>
+                    <input type="text" id="stockCode" name="StockCode" value="85123A" required>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="country">Paese di Destinazione</label>
+                    <select id="country" name="Country" required>
+                        <option value="United Kingdom">Regno Unito</option>
+                        <option value="France">Francia</option>
+                        <option value="Germany">Germania</option>
+                        <option value="Spain">Spagna</option>
+                        <option value="Italy">Italia</option>
+                    </select>
+                </div>
+            </form>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="testInference()" id="predictBtn" disabled>
+                    Esegui Predizione
+                </button>
+            </div>
+            <div class="result-box" id="resultBox">
+                <div><strong>Valore Predetto:</strong></div>
+                <div id="predictedValue" style="margin-top: 8px; font-size: 24px;">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="card">
+        <h2>Log di Sistema</h2>
+        <div class="logs-container" id="logsContainer">
+            <div class="log-entry info">Sistema inizializzato. In attesa di operazioni...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const socket = io('http://localhost:8080');
+    let currentStatus = {};
+
+    // Socket.IO event handlers
+    socket.on('connect', function() {
+        addLog('✓ Connessione stabilita con il server', 'info');
+        updateConnectionStatus(true);
+    });
+
+    socket.on('disconnect', function() {
+        addLog('✗ Connessione interrotta', 'error');
+        updateConnectionStatus(false);
+    });
+
+    socket.on('status_update', function(status) {
+        currentStatus = status;
+        updatePipelineUI(status);
+    });
+
+    socket.on('new_log', function(log) {
+        addLog(`[${log.timestamp}] ${log.message}`, log.level);
+    });
+
+    function updateConnectionStatus(connected) {
+        const indicator = document.getElementById('connectionStatus');
+        const text = document.getElementById('connectionText');
+
+        if (connected) {
+            indicator.className = 'status-indicator status-connected';
+            text.textContent = 'Connesso al server';
+        } else {
+            indicator.className = 'status-indicator status-disconnected';
+            text.textContent = 'Disconnesso';
+        }
+    }
+
+    // File upload handling
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileUpload(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileUpload(e.target.files[0]);
+        }
+    });
+
+    function handleFileUpload(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        addLog(`Iniziando caricamento file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`, 'info');
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog(`✓ File caricato con successo: ${data.filename}`, 'info');
+                    setTimeout(loadDatasetPreview, 2000);
+                } else {
+                    addLog(`✗ Errore durante il caricamento: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                addLog(`✗ Errore di rete: ${error}`, 'error');
+            });
+    }
+
+    function updatePipelineUI(status) {
+        for (const [phase, info] of Object.entries(status.phases)) {
+            const phaseElement = document.querySelector(`[data-phase="${phase}"]`);
+            if (phaseElement) {
+                phaseElement.className = 'phase';
+
+                if (info.status === 'completed') {
+                    phaseElement.classList.add('completed');
+                } else if (info.status === 'running') {
+                    phaseElement.classList.add('active');
+                } else if (info.status === 'error') {
+                    phaseElement.classList.add('error');
+                }
+
+                const statusElement = phaseElement.querySelector('.phase-status');
+                if (info.status === 'pending') {
+                    statusElement.textContent = 'In attesa';
+                } else if (info.status === 'running') {
+                    statusElement.textContent = 'In elaborazione...';
+                } else if (info.status === 'completed') {
+                    statusElement.textContent = 'Completato ✓';
+                } else if (info.status === 'error') {
+                    statusElement.textContent = 'Errore ✗';
+                }
+            }
+        }
+
+        // Enable/disable predict button
+        const predictBtn = document.getElementById('predictBtn');
+        predictBtn.disabled = !status.model_ready;
+
+        if (status.model_ready) {
+            predictBtn.style.background = '#28a745';
+            predictBtn.textContent = 'Esegui Predizione (Modello Pronto)';
+        }
+
+        // Load model info if ready
+        if (status.model_ready) {
+            loadModelInfo();
+        }
+    }
+
+    function loadDatasetPreview() {
+        fetch('/dataset/preview')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                // Update stats
+                document.getElementById('datasetStats').style.display = 'grid';
+                document.getElementById('statRows').textContent = data.rows.toLocaleString();
+                document.getElementById('statCols').textContent = data.columns;
+                document.getElementById('statNulls').textContent = Object.values(data.null_counts).reduce((a, b) => a + b, 0);
+                document.getElementById('statSource').textContent = data.source === 'processed' ? 'Elaborato' : 'Grezzo';
+
+                // Update table
+                const table = document.getElementById('dataTable');
+                const thead = document.getElementById('dataTableHead');
+                const tbody = document.getElementById('dataTableBody');
+
+                // Clear existing content
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+
+                // Add headers
+                const headerRow = document.createElement('tr');
+                data.column_names.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = col;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+
+                // Add sample rows
+                data.sample_data.slice(0, 10).forEach(row => {
+                    const tr = document.createElement('tr');
+                    data.column_names.forEach(col => {
+                        const td = document.createElement('td');
+                        td.textContent = row[col] !== null ? row[col] : 'null';
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                table.style.display = 'table';
+                document.getElementById('noDataMessage').style.display = 'none';
+
+                addLog(`Anteprima dataset caricata: ${data.rows} righe, ${data.columns} colonne`, 'info');
+            })
+            .catch(error => {
+                console.error('Error loading dataset:', error);
+                addLog(`✗ Errore nel caricamento anteprima: ${error}`, 'error');
+            });
+    }
+
+    function loadModelInfo() {
+        fetch('/model/info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.countries) {
+                    const countrySelect = document.getElementById('country');
+                    countrySelect.innerHTML = '';
+                    data.countries.forEach(country => {
+                        const option = document.createElement('option');
+                        option.value = country;
+                        option.textContent = country;
+                        countrySelect.appendChild(option);
+                    });
+                    addLog(`Modello pronto per inferenza con ${data.countries.length} paesi supportati`, 'info');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading model info:', error);
+                addLog(`✗ Errore nel caricamento info modello: ${error}`, 'error');
+            });
+    }
+
+    function testInference() {
+        const formData = new FormData(document.getElementById('inferenceForm'));
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = isNaN(value) ? value : parseFloat(value);
+        });
+
+        addLog(`Eseguendo predizione con parametri: ${JSON.stringify(data)}`, 'info');
+
+        fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                const resultBox = document.getElementById('resultBox');
+                const predictedValue = document.getElementById('predictedValue');
+
+                if (result.error) {
+                    predictedValue.textContent = `Errore: ${result.error}`;
+                    resultBox.className = 'result-box error';
+                    addLog(`✗ Errore nella predizione: ${result.error}`, 'error');
+                } else {
+                    predictedValue.textContent = `€ ${result.predicted_value.toFixed(2)}`;
+                    resultBox.className = 'result-box';
+                    addLog(`✓ Predizione completata: €${result.predicted_value.toFixed(2)}`, 'info');
+                }
+
+                resultBox.style.display = 'block';
+            })
+            .catch(error => {
+                addLog(`✗ Errore di rete nella predizione: ${error}`, 'error');
+            });
+    }
+
+    function clearPipeline() {
+        if (confirm('Attenzione: questa operazione cancellerà tutti i dati e resetterà la pipeline. Continuare?')) {
+            addLog('Iniziando reset del sistema...', 'info');
+            fetch('/clear')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('✓ Sistema resettato con successo', 'info');
+                        document.getElementById('dataTable').style.display = 'none';
+                        document.getElementById('noDataMessage').style.display = 'block';
+                        document.getElementById('datasetStats').style.display = 'none';
+                        document.getElementById('resultBox').style.display = 'none';
+
+                        // Reset predict button
+                        const predictBtn = document.getElementById('predictBtn');
+                        predictBtn.disabled = true;
+                        predictBtn.style.background = '#495057';
+                        predictBtn.textContent = '📈 Esegui Predizione';
+                    }
+                })
+                .catch(error => {
+                    addLog(`✗ Errore durante il reset: ${error}`, 'error');
+                });
+        }
+    }
+
+    function addLog(message, level = 'info') {
+        const logsContainer = document.getElementById('logsContainer');
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry ${level}`;
+
+        const timestamp = new Date().toLocaleTimeString();
+        logEntry.textContent = `[${timestamp}] ${message}`;
+
+        logsContainer.appendChild(logEntry);
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+
+    // Initialize
+    updateConnectionStatus(false);
+    setTimeout(loadDatasetPreview, 1000);
+</script>
+</body>
+</html>
